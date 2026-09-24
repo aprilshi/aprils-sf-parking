@@ -1,5 +1,5 @@
 // Network-first with cache fallback so the app (and your saved-spot info) still opens with bad signal.
-const CACHE = "sfpark-v3";
+const CACHE = "sfpark-v4";
 const SHELL = ["./", "index.html", "style.css", "schedule.js", "app.js", "manifest.webmanifest", "icon.svg", "icon-192.png",
   "data/sweeping.json", "data/meters.json", "data/meta.json", "data/holidays.json"];
 

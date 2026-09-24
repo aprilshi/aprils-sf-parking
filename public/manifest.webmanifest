@@ -1,6 +1,6 @@
 {
-  "name": "SF Park Smart",
-  "short_name": "SF Park",
+  "name": "April's Guide to Parking in SF",
+  "short_name": "April's Parking",
   "description": "SF street cleaning, meter rates & parking reminders",
   "start_url": "./",
   "scope": "./",

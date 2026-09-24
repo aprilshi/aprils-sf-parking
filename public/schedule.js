@@ -210,10 +210,10 @@
 
   // events: [{ title, start, end, alarms: [minutesBefore], rrule?, description?, location? }]
   function buildICS(events) {
-    const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//SF Park Smart//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", ...VTIMEZONE];
+    const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//April's Guide to Parking in SF//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", ...VTIMEZONE];
     const stamp = icsUtc(new Date());
     events.forEach((e, i) => {
-      lines.push("BEGIN:VEVENT", `UID:${stamp}-${i}-${Math.random().toString(36).slice(2)}@sfparksmart`, `DTSTAMP:${stamp}`,
+      lines.push("BEGIN:VEVENT", `UID:${stamp}-${i}-${Math.random().toString(36).slice(2)}@aprils-sf-parking`, `DTSTAMP:${stamp}`,
         `DTSTART;TZID=America/Los_Angeles:${icsLocal(e.start)}`, `DTEND;TZID=America/Los_Angeles:${icsLocal(e.end)}`,
         `SUMMARY:${esc(e.title)}`);
       if (e.rrule) lines.push(`RRULE:${e.rrule}`);

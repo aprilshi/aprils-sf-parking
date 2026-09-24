@@ -12,7 +12,7 @@ html, body { margin: 0; height: 100%; font: 15px/1.4 -apple-system, BlinkMacSyst
 .layers { display: flex; gap: 12px; font-size: 14px; }
 .layers input { vertical-align: -2px; }
 
-#legend { position: absolute; z-index: 2; left: 10px; top: calc(env(safe-area-inset-top) + 104px); max-height: 60vh; overflow-y: auto;
+#legend { position: absolute; z-index: 2; left: 10px; top: calc(env(safe-area-inset-top) + 118px); max-height: 60vh; overflow-y: auto;
   background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,.2); font-size: 13px; max-width: 240px; }
 #legend-btn { border: 0; background: none; font-weight: 700; font-size: 16px; width: 34px; height: 34px; cursor: pointer; }
 #legend.collapsed .legend-body { display: none; }
@@ -77,8 +77,9 @@ select, input[type=text] { font-size: 15px; padding: 6px 8px; border-radius: 8px
 .sr { display: block; width: 100%; text-align: left; border: 0; border-bottom: 1px solid #f3f4f6; background: #fff; padding: 10px 12px; font-size: 15px; cursor: pointer; color: inherit; }
 .sr:hover { background: #f9fafb; }
 .sr-empty { padding: 10px 12px; color: #6b7280; }
-.maplibregl-ctrl-top-right { top: calc(env(safe-area-inset-top) + 104px); }
+.maplibregl-ctrl-top-right { top: calc(env(safe-area-inset-top) + 118px); }
 .holidays > div { margin: 4px 0; }
 .indent { padding-left: 24px; }
 .search-marker { font-size: 30px; filter: drop-shadow(0 2px 2px rgba(0,0,0,.4)); }
 .checks input[type=text] { width: 100%; margin-top: 4px; }
+.brand { font-size: 15px; line-height: 1.2; }

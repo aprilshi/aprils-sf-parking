@@ -128,7 +128,7 @@ def build_holidays():
     """Scrape SFMTA's enforcement calendar table: Date | Holiday | Meters | Nightly sweeping | Other programs.
     'Other programs' covers daytime street sweeping (6am-2pm)."""
     print("Holidays…")
-    req = urllib.request.Request(HOLIDAY_URL, headers={"User-Agent": "Mozilla/5.0 (sf-park-smart data build)"})
+    req = urllib.request.Request(HOLIDAY_URL, headers={"User-Agent": "Mozilla/5.0 (aprils-sf-parking data build)"})
     with urllib.request.urlopen(req, timeout=60) as r:
         page = r.read().decode("utf-8", "ignore")
     holidays = []

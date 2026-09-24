@@ -1,4 +1,4 @@
-# SF Park Smart
+# April's Guide to Parking in SF
 
 Phone-friendly map of San Francisco street cleaning + parking meter hours/rates, with "I parked here" reminders.
 Everything runs in the browser from static files, so there's no server, account, or API key.
