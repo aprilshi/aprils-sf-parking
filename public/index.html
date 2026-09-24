@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>SF Park Smart</title>
+  <meta name="theme-color" content="#1f2937">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="map"></div>
+
+  <header id="topbar">
+    <div class="brand">SF Park Smart</div>
+    <div class="layers">
+      <label><input type="checkbox" id="toggle-sweep" checked> Sweeping</label>
+      <label><input type="checkbox" id="toggle-meters" checked> Meters</label>
+    </div>
+    <div class="searchbar">
+      <input id="search" type="search" placeholder="Address or meter # (e.g. 1 Dr Carlton B Goodlett Pl)" autocomplete="off" enterkeyhint="search">
+      <button id="search-clear" aria-label="Clear search">×</button>
+    </div>
+    <div id="search-results" class="hidden"></div>
+  </header>
+
+  <div id="legend" class="collapsed">
+    <button id="legend-btn" aria-label="Legend">?</button>
+    <div class="legend-body">
+      <b>Street sweeping (each side of street)</b>
+      <div><i style="background:#dc2626"></i>Within 24 hours</div>
+      <div><i style="background:#f59e0b"></i>Within 3 days</div>
+      <div><i style="background:#eab308"></i>Within 7 days</div>
+      <div><i style="background:#60a5fa"></i>Later / not scheduled soon</div>
+      <b>Meters (right now)</b>
+      <div><i class="dot" style="background:#7c3aed"></i>Paid now</div>
+      <div><i class="dot" style="background:#9ca3af"></i>Free now</div>
+      <div><i class="dot" style="background:#dc2626"></i>Tow-away now</div>
+      <b>Upcoming holidays</b>
+      <div id="holiday-list" class="holidays"></div>
+      <div class="small">Zoom in to see meters. Tap any street side or meter for details.</div>
+      <div class="small" id="data-asof"></div>
+    </div>
+  </div>
+
+  <button id="home-btn" class="fab" aria-label="Go to home">🏠</button>
+  <button id="locate-btn" class="fab" aria-label="Show my location">◎</button>
+  <button id="park-btn" class="fab primary">🚗 I parked here</button>
+
+  <section id="sheet" class="hidden">
+    <button id="sheet-close" aria-label="Close">×</button>
+    <div id="sheet-body"></div>
+  </section>
+
+  <div id="toast" class="hidden"></div>
+
+  <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
+  <script src="schedule.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
