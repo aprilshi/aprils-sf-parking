@@ -422,7 +422,7 @@ function parkedEvents() {
     const pat = patterns[m.p];
     const st = S.meterStatus(pat, now);
     const lim = limitDeadline(m, new Date(p.at));
-    if (pr.limitOn && lim && lim > now) {
+    if (pr.limitOn && lim && lim > now && !p.paid) {
       ev.push({ kind: "limit", title: `⏱ Meter time limit up at ${S.fmtTime(lim)}`, start: lim, end: new Date(+lim + 15 * 6e4), alarms: [pr.limitLead], location: where });
     }
     const next = st.state === "FREE" ? st.next : S.nextEnforcedStart(pat, st.until);
@@ -447,7 +447,8 @@ function showParked() {
     ${b ? sweepSummaryHTML(b, p.side) : `<div class="card">No sweeping route found here.</div>`}
     <h3>Meter</h3>
     ${m ? `<div class="card"><div class="sub">#${esc(m.id)} · ${esc(m.addr)}</div>${meterStatusHTML(m, new Date(), new Date(p.at))}</div>
-      <details><summary>Weekly schedule</summary>${weekTableHTML(patterns[m.p])}</details>` : `<div class="card">No meter saved.</div>`}
+      <details><summary>Weekly schedule</summary>${weekTableHTML(patterns[m.p])}</details>
+      ${payHTML(m, p)}` : `<div class="card">No meter saved.</div>`}
     <h3>Reminders for this spot</h3>
     <div class="sub">Only for where your car is now. They stop when you tap “I've left”.</div>
     <div class="checks">
@@ -484,9 +485,114 @@ function showParked() {
     if (r === "granted") { scheduleNotifications(); toast("Notifications enabled"); }
     showParked();
   });
+  if (m) wirePay(m);
   $("#move-spot").onclick = () => { const q = store.get("parked"); startParking(q.lngLat, m ? meters.indexOf(m) : null); pending.meterTouched = true; };
   $("#clear-spot").onclick = leaveSpot;
   updateParkButton();
+}
+
+// ---------- paying: ParkMobile + Instinct ----------
+// Instinct's number + your plate live only in this phone's localStorage, never in the code or repo.
+const agentSettings = () => ({ instinct: "", plate: "", ...store.get("agent", {}) });
+const PARKMOBILE_WEB = "https://app.parkmobile.io/zone/start";
+const PARKMOBILE_PHONE = "+18777279991";
+
+// SFMTA's 8-digit location/zone number is the meter number without the dash (user can override).
+const zoneFor = (m, p) => p?.zone || m.id.replace("-", "");
+
+// How long to pay for, from the meter's hours and time limit.
+function paySuggestion(m, now = new Date()) {
+  const st = S.meterStatus(patterns[m.p], now);
+  if (st.state === "TOW") return { tow: true, until: st.until };
+  if (st.state === "OP" || st.state === "ALT") {
+    const limEnd = st.limit ? new Date(+now + st.limit * 6e4) : null;
+    const byLimit = limEnd && limEnd < st.until;
+    return { payNow: true, until: byLimit ? limEnd : st.until, why: byLimit ? `${S.fmtLimit(st.limit)}` : "meter hours end", rate: st.rate };
+  }
+  return st.next ? { payNow: false, startsAt: st.next.start, rate: st.next.rate, limit: st.next.limit, tow: st.next.type === "TOW" } : { payNow: false };
+}
+
+function payText(sg) {
+  if (sg.tow && sg.until) return `<div class="warn big">Tow-away zone right now. Move your car.</div>`;
+  if (sg.payNow) return `<div class="big">Pay until ${S.fmtTime(sg.until)}</div><div class="sub">${esc(sg.why)} · $${(sg.rate ?? 0).toFixed(2)}/hr</div>`;
+  if (sg.startsAt) return `<div class="big ok">No need to pay yet</div><div class="sub">${sg.tow ? "Tow-away" : "Meter"} starts ${S.fmtWhen(sg.startsAt)}${sg.rate != null ? ` · $${sg.rate.toFixed(2)}/hr` : ""}${sg.limit ? ` · ${S.fmtLimit(sg.limit)}` : ""}</div>`;
+  return `<div class="big ok">No payment needed this week</div>`;
+}
+
+function payHTML(m, p) {
+  const sg = paySuggestion(m), a = agentSettings();
+  return `
+    <h3>Pay for parking</h3>
+    <div class="card">${payText(sg)}
+      <div style="margin-top:6px">ParkMobile zone <b id="zone-val">${esc(zoneFor(m, p))}</b>
+        <button class="btn" id="zone-edit" style="padding:2px 8px;margin:0 0 0 6px">edit</button></div>
+      <div class="small" style="margin-top:2px">Check that it matches the zone number on the meter's ParkMobile sticker.</div>
+      ${p.paid ? `<div class="ok" style="margin-top:6px">✅ Marked paid${p.paidUntil ? ` until ${S.fmtTime(new Date(p.paidUntil))}` : ""}. ParkMobile will alert you before it runs out.</div>` : ""}
+    </div>
+    <button class="btn primary" id="pay-pm">🅿️ Pay with ParkMobile</button>
+    <button class="btn" id="pay-instinct">🤖 Send to Instinct</button>
+    <a class="btn" href="tel:${PARKMOBILE_PHONE}">📞 Pay by phone call</a>
+    ${p.paid ? `<button class="btn" id="pay-unmark">Undo paid</button>` : `<button class="btn" id="pay-mark">✅ I've paid</button>`}
+    <details style="margin-top:8px"><summary>Instinct & license plate (saved on this phone only)</summary>
+      <div class="checks">
+        <label>Instinct's number or iMessage email<br><input type="text" id="agent-instinct" value="${esc(a.instinct)}" placeholder="Leave blank to choose in the share sheet" autocomplete="off"></label>
+        <label>License plate<br><input type="text" id="agent-plate" value="${esc(a.plate)}" placeholder="e.g. 8ABC123" autocomplete="off" style="text-transform:uppercase"></label>
+      </div>
+      <div class="small">Stored only in this browser on this phone. It's never uploaded or included in the app's code. Clearing site data removes it. The app never asks for your ParkMobile password or card.</div>
+      <button class="btn" id="agent-clear">Clear saved info</button>
+    </details>`;
+}
+
+function instinctMessage(m, p) {
+  const sg = paySuggestion(m), plate = agentSettings().plate.trim().toUpperCase();
+  const lines = [
+    "Please pay for my parking with ParkMobile (San Francisco, SFMTA meter):",
+    `• Zone: ${zoneFor(m, p)} (meter #${m.id}, ${m.addr})`,
+    sg.payNow ? `• Pay until: ${S.fmtTime(sg.until)} today (${sg.why}), currently $${(sg.rate ?? 0).toFixed(2)}/hr`
+      : sg.startsAt ? `• The meter starts ${S.fmtWhen(sg.startsAt)}. Pay from then${sg.limit ? ` for up to ${S.fmtLimit(sg.limit).replace(" limit", "")}` : ""}`
+      : "• The meter isn't enforced right now",
+    plate ? `• License plate: ${plate}` : "• License plate: (ask me)",
+    "Please confirm the total with me before paying.",
+  ];
+  return lines.join("\n");
+}
+
+function wirePay(m) {
+  const p = store.get("parked");
+  const saveParked = (patch) => { store.set("parked", { ...store.get("parked"), ...patch }); scheduleNotifications(); showParked(); };
+  $("#pay-pm").onclick = async () => {
+    const zone = zoneFor(m, p);
+    try { await navigator.clipboard.writeText(zone); toast(`Zone ${zone} copied. Paste it in ParkMobile.`, 4000); } catch { toast(`Enter zone ${zone} in ParkMobile`, 4000); }
+    window.open(PARKMOBILE_WEB, "_blank", "noopener");
+  };
+  $("#pay-instinct").onclick = async () => {
+    const text = instinctMessage(m, p), to = agentSettings().instinct.trim();
+    if (to) {
+      const sep = /iPhone|iPad|Mac/.test(navigator.userAgent) ? "&" : "?";
+      location.href = `sms:${encodeURIComponent(to).replace(/%2B/g, "+").replace(/%40/g, "@")}${sep}body=${encodeURIComponent(text)}`;
+    } else if (navigator.share) {
+      try { await navigator.share({ text }); } catch { /* user cancelled */ }
+    } else {
+      try { await navigator.clipboard.writeText(text); toast("Message copied. Paste it to Instinct.", 4000); } catch { alert(text); }
+    }
+  };
+  $("#pay-mark")?.addEventListener("click", () => {
+    const sg = paySuggestion(m);
+    saveParked({ paid: true, paidUntil: sg.payNow ? +sg.until : null });
+    toast("Marked paid. The time-limit reminder is off.");
+  });
+  $("#pay-unmark")?.addEventListener("click", () => saveParked({ paid: false, paidUntil: null }));
+  $("#zone-edit").onclick = () => {
+    const v = prompt("ParkMobile zone number from the meter sticker:", zoneFor(m, p));
+    if (v == null) return;
+    const z = v.replace(/\D/g, "");
+    if (!/^[1-9]\d{0,7}$/.test(z)) return toast("Zone numbers are 1–8 digits and don't start with 0.");
+    saveParked({ zone: z === m.id.replace("-", "") ? null : z });
+  };
+  const saveAgent = () => store.set("agent", { instinct: $("#agent-instinct").value.trim(), plate: $("#agent-plate").value.trim().toUpperCase() });
+  $("#agent-instinct").onchange = saveAgent;
+  $("#agent-plate").onchange = saveAgent;
+  $("#agent-clear").onclick = () => { store.del("agent"); showParked(); toast("Saved info cleared"); };
 }
 
 const leadSelect = (key, opts) => `<select data-pref="${key}">${opts.map((v) => `<option ${v === prefs()[key] ? "selected" : ""} value="${v}">${v} min before</option>`).join("")}</select>`;
