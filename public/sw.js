@@ -1,6 +1,6 @@
 // Network-first with cache fallback so the app (and your saved-spot info) still opens with bad signal.
-const CACHE = "sfpark-v4";
-const SHELL = ["./", "index.html", "style.css", "schedule.js", "app.js", "manifest.webmanifest", "icon.svg", "icon-192.png",
+const CACHE = "sfpark-v5";
+const SHELL = ["./", "index.html", "style.css", "schedule.js", "app.js", "manifest.webmanifest", "icon.svg", "icon-180.png", "icon-192.png",
   "data/sweeping.json", "data/meters.json", "data/meta.json", "data/holidays.json"];
 
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL))); self.skipWaiting(); });
